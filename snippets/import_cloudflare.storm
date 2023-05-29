@@ -1,0 +1,27 @@
+$datasets = $lib.list("top_200", "top_500", "top_1000", "top_2000", "top_5000", "top_10000", "top_20000", "top_50000", "top_100000", "top_200000", "top_500000", "top_1000000")
+
+for $dataset in $datasets {
+    $url = $lib.str.concat("https://api.cloudflare.com/client/v4/radar/datasets/ranking_", $dataset)
+    $headers = $lib.dict(
+        "Accept"="application/json",
+        "Authorization"=$lib.globals.get(cloudflare:apikey)
+    )
+    
+    $resp = $lib.inet.http.get($url, $headers)
+    
+    if ($resp.code = 200) {
+        
+        $body = $resp.body
+        $body = $lib.inet.http.urldecode($body)
+        $body = $body.split("\n")
+
+        $tag = $lib.regex.replace("top_", "", $dataset)
+        $time = $lib.time.now()
+    
+        for $domain in $body {
+            if ($domain~="\w") {[inet:fqdn=$domain] [+#rep.cloudflare.top.$tag=$time]}
+        }
+    } else {
+        $lib.warn("Download for dataset \"{dataset}\" returned HTTP code: {code}", dataset=$dataset, code=$resp.code)
+    }
+}

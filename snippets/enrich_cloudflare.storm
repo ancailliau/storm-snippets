@@ -1,0 +1,40 @@
++inet:fqdn
+
+$url = $lib.str.concat("https://api.cloudflare.com/client/v4/radar/ranking/domain/", $node.repr())
+$headers = $lib.dict(
+    "Accept"="application/json",
+    "Authorization"=$lib.globals.get(cloudflare:apikey)
+)
+
+$resp = $lib.inet.http.get($url, $headers)
+
+if ($resp.code = 200) {
+    
+    {
+    $body = $resp.body
+    $body = $lib.inet.http.urldecode($body)
+    $body = $lib.json.load($body)
+
+    $time = $lib.time.now()
+
+    if ($body.result.details_0.categories != $lib.null) {
+        for $category in $body.result.details_0.categories {
+            $tag = $lib.regex.replace(" ", "_", $category.name)
+            [+#rep.cloudflare.cat.$tag=$time]
+        }
+    }
+
+    if ($body.result.details_0.top_locations != $lib.null) {
+        for $country in $body.result.details_0.top_locations {
+            $tag = $lib.regex.replace(" ", "_", $country.locationName)
+            [+#rep.cloudflare.top_location.$tag=$time]
+        }
+    }
+
+    $tag = $body.result.details_0.bucket
+    if ($tag != ">200000") { [+#rep.cloudflare.top.$tag=$time] }
+    }
+
+} else {
+    $lib.warn("Query returned HTTP code: {code}", code=$resp.code)
+}
