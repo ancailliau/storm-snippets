@@ -1,0 +1,10 @@
+// replace -(uses)> with -(refs)>
+
+<risk:threat> -(uses)> *        \\ navigate / traverse to all the things the risk:threat "uses"
+[ <(refs)+ { <risk:threat> } ]  \\ add a 'refs' edge between each of those things and the risk:threat node
+-(uses)> *                      \\ navigate (again) to all the things the risk:threat "uses"
+[ <(uses)- { <risk:threat> } ]  \\ remove the "uses" edges to the risk:threat
+
+
+
+risk:threat $guid=$node.value() [ +(refs)> { risk:threat=$guid -(uses)> * } -(uses)> { risk:threat=$guid -(uses)> * } ]
