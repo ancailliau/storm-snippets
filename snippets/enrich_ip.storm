@@ -1,0 +1,19 @@
+function enrich_ip(ip, ip_data) {
+
+    [ inet:ipv4=$ip
+      // use conditional assignment with ?= to assign if the value normalizes and skip it if not
+      :dns:rev?=$ip_data.hostname  // this will automatically create the inet:fqdn
+      :latlong?=$ip_data.loc
+      :loc?=$ip_data.country
+    ]
+
+    if $ip_data.org {
+        ($as_id, $as_name) = $ip_data.org.split(" ", maxsplit=1)
+        $as_num = $as_id.strip("AS")
+        [ :asn?=$as_num ]
+        // pivot over to the inet:asn (if it exists) in a subquery to assign name
+        // without changing the output pipeline
+        { -> inet:asn [ :name?=$as_name ] }
+    }
+    // only the inet:ipv4 node is yielded from the function
+}
