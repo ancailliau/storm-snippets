@@ -1,0 +1,9 @@
+$tally = $lib.stats.tally()
+
+inet:ipv4#foo.bar
++:asn $tally.inc(:asn)
+| spin |
+
+for ($count, $value) in $tally.sorted() {
+    $lib.print(`ASN: {$value} had count {$count}`)
+}
